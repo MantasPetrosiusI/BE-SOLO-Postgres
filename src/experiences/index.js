@@ -1,8 +1,18 @@
 import Express from "express";
 import ExperiencesModel from "./model.js";
 import createHttpError from "http-errors";
+import { v2 as cloudinary } from "cloudinary";
+import multer from "multer";
+import { CloudinaryStorage } from "multer-storage-cloudinary";
 
 const experiencesRouter = Express.Router();
+
+const imageUploader = multer({
+  storage: new CloudinaryStorage({
+    cloudinary,
+    params: { folder: "backend-u2-w1/experiences" },
+  }),
+}).single("exp");
 
 experiencesRouter.post("/:userId/experiences", async (req, res, next) => {
   try {
@@ -10,6 +20,7 @@ experiencesRouter.post("/:userId/experiences", async (req, res, next) => {
       ...req.body,
       userId: req.params.userId,
     });
+
     res.status(201).send({ id });
   } catch (error) {
     next(error);
@@ -77,6 +88,31 @@ experiencesRouter.delete(
         res.status(204).send();
       } else {
         next(createHttpError(404, `Experience not found!`));
+      }
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+experiencesRouter.post(
+  "/:userId/experiences/:experienceId/image",
+  imageUploader,
+  async (request, response, next) => {
+    try {
+      if (request.file) {
+        const [numberOfUpdatedExperiences, updatedExperiences] =
+          await ExperiencesModel.update(
+            { image: request.file.path },
+            { where: { id: request.params.experienceId }, returning: true }
+          );
+        if (numberOfUpdatedExperiences === 1) {
+          response.send(updatedExperiences[0]);
+        } else {
+          next(createHttpError(404, `Experience not found!`));
+        }
+      } else {
+        next(createHttpError(400, `No file selected.`));
       }
     } catch (error) {
       next(error);

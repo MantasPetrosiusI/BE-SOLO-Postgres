@@ -32,7 +32,7 @@ const ExperiencesModel = sequelize.define("experience", {
     allowNull: false,
   },
   image: {
-    type: DataTypes.STRING(100),
+    type: DataTypes.TEXT,
     allowNull: true,
   },
 });
